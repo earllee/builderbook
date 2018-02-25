@@ -46,15 +46,11 @@ class ReadChapter extends React.Component {
     super(props, ...args);
 
     const { chapter } = props;
-    let htmlContent = '';
-    if (chapter && (chapter.isPurchased || chapter.isFree)) {
-      htmlContent = chapter.htmlContent;
-    } else {
-      htmlContent = chapter.htmlExcerpt;
-    }
+
+    const htmlContent = '' || chapter.htmlContent;
 
     this.state = {
-      showChapters: false,
+      showTOC: false,
       chapter,
       htmlContent,
       isMobile: false,
@@ -78,13 +74,7 @@ class ReadChapter extends React.Component {
     if (chapter && chapter._id !== this.props.chapter._id) {
       this.mainContent.scrollIntoView();
 
-      let htmlContent;
-
-      if (chapter.isPurchased || chapter.isFree) {
-        htmlContent = chapter.htmlContent;
-      } else {
-        htmlContent = chapter.htmlExcerpt;
-      }
+      const htmlContent = '' || chapter.htmlContent;
 
       this.setState({ chapter: nextProps.chapter, htmlContent });
     }
@@ -95,16 +85,17 @@ class ReadChapter extends React.Component {
   }
 
   onScroll = throttle(() => {
-    const sectionElms = document.querySelectorAll('a.section-anchor');
+    const sectionElms = document.querySelectorAll('span.section-anchor');
     let activeSection;
 
     let preBound;
     for (let i = 0; i < sectionElms.length; i += 1) {
       const s = sectionElms[i];
       const b = s.getBoundingClientRect();
+      const anchorTop = b.top;
+      const anchorBottom = b.bottom;
 
-      const isInViewport = b.top >= 0 && b.bottom <= window.innerHeight;
-      if (isInViewport) {
+      if (anchorTop >= 0 && anchorBottom <= window.innerHeight) {
         activeSection = {
           text: s.textContent.replace(/\n/g, '').trim(),
           hash: s.attributes.getNamedItem('name').value,
@@ -113,7 +104,7 @@ class ReadChapter extends React.Component {
         break;
       }
 
-      if (b.bottom > window.innerHeight && i > 0) {
+      if (anchorBottom > window.innerHeight && i > 0) {
         if (preBound.top <= 0) {
           activeSection = {
             text: sectionElms[i - 1].textContent.replace(/\n/g, '').trim(),
@@ -122,7 +113,6 @@ class ReadChapter extends React.Component {
           break;
         }
       } else if (i + 1 === sectionElms.length) {
-        // if it is last section, it is active anyway
         activeSection = {
           text: s.textContent.replace(/\n/g, '').trim(),
           hash: s.attributes.getNamedItem('name').value,
@@ -136,11 +126,11 @@ class ReadChapter extends React.Component {
   }, 500);
 
   toggleChapterList = () => {
-    this.setState({ showChapters: !this.state.showChapters });
+    this.setState({ showTOC: !this.state.showTOC });
   };
 
   closeTocWhenMobile = () => {
-    this.setState({ showChapters: !this.state.isMobile });
+    this.setState({ showTOC: !this.state.isMobile });
   };
 
   renderMainContent() {
@@ -148,11 +138,11 @@ class ReadChapter extends React.Component {
       chapter,
       htmlContent,
       isMobile,
-      showChapters,
+      showTOC,
     } = this.state;
 
     let padding = '20px 20%';
-    if (!isMobile && showChapters) {
+    if (!isMobile && showTOC) {
       padding = '20px 10%';
     } else if (isMobile) {
       padding = '0px 10px';
@@ -206,10 +196,10 @@ class ReadChapter extends React.Component {
   }
 
   renderSidebar() {
-    const { showChapters, chapter, isMobile } = this.state;
+    const { showTOC, chapter, isMobile } = this.state;
     const { hideHeader } = this.props;
 
-    if (!showChapters) {
+    if (!showTOC) {
       return null;
     }
 
@@ -255,17 +245,15 @@ class ReadChapter extends React.Component {
   }
 
   render() {
-    const { chapter, showChapters, isMobile } = this.state;
+    const { chapter, showTOC, isMobile } = this.state;
     const { hideHeader } = this.props;
 
     if (!chapter) {
       return <Error statusCode={404} />;
     }
 
-    const { book } = chapter;
-
     let left = 20;
-    if (showChapters) {
+    if (showTOC) {
       left = isMobile ? '100%' : '320px';
     }
 
@@ -296,7 +284,6 @@ class ReadChapter extends React.Component {
             left,
             overflowY: 'auto',
             overflowX: 'hidden',
-            zIndex: '1000',
           }}
           ref={(elm) => {
             this.mainContentElm = elm;
@@ -320,28 +307,6 @@ class ReadChapter extends React.Component {
             >
               format_list_bulleted
             </i>
-
-            {book.supportURL ? (
-              <div>
-                <a
-                  href={book.supportURL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: '#222', opacity: '1' }}
-                >
-                  <i
-                    className="material-icons"
-                    style={{
-                      opacity: '0.5',
-                      fontSize: '24',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    help_outline
-                  </i>
-                </a>
-              </div>
-            ) : null}
           </div>
 
           {this.renderMainContent()}
