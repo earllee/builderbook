@@ -6,6 +6,7 @@
     "build": "next build",
     "start": "next start",
     "dev": "next",
+    "dev-express": "nodemon server/app.js --watch server --exec babel-node",
     "lint": "eslint components pages lib server"
   },
   "dependencies": {
