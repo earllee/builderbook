@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import session from 'express-session';
 import mongoSessionStore from 'connect-mongo';
 
-import User from './models/User';
+import auth from './google';
 
 dotenv.config();
 
@@ -47,12 +47,7 @@ app.prepare().then(() => {
 
   server.use(session(sess));
 
-  // this is testing code, remove later
-  server.get('/', async (req, res) => {
-    req.session.foo = 'bar';
-    const user = await User.findOne({ slug: 'team-builder-book' });
-    app.render(req, res, '/', { user });
-  });
+  auth({ server, ROOT_URL });
 
   server.get('*', (req, res) => handle(req, res));
 

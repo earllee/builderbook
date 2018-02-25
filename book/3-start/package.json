@@ -4,8 +4,7 @@
   "scripts": {
     "build": "next build",
     "start": "next start",
-    "dev": "next",
-    "dev-express": "nodemon server/app.js --watch server --exec babel-node",
+    "dev": "nodemon server/app.js --watch server --exec babel-node",
     "lint": "eslint components pages lib server"
   },
   "dependencies": {
@@ -19,6 +18,8 @@
     "mongoose": "^5.0.0-rc0",
     "next": "^5.0.0",
     "nprogress": "^0.2.0",
+    "passport": "^0.4.0",
+    "passport-google-oauth": "^1.0.0",
     "prop-types": "^15.6.0",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
