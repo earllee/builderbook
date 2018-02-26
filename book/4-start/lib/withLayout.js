@@ -5,6 +5,7 @@ import Reboot from 'material-ui/Reboot';
 
 import getContext from '../lib/context';
 import Header from '../components/Header';
+import Notifier from '../components/Notifier';
 
 function withLayout(BaseComponent) {
   class App extends React.Component {
@@ -29,6 +30,7 @@ function withLayout(BaseComponent) {
           <div>
             <Header {...this.props} />
             <BaseComponent {...this.props} />
+            <Notifier />
           </div>
         </MuiThemeProvider>
       );
