@@ -2,6 +2,9 @@ import _ from 'lodash';
 import mongoose, { Schema } from 'mongoose';
 
 import generateSlug from '../utils/slugify';
+import sendEmail from '../aws';
+import getEmailTemplate from './EmailTemplate';
+import logger from '../logs';
 
 const mongoSchema = new Schema({
   googleId: {
@@ -57,7 +60,7 @@ class UserClass {
 
     if (user) {
       const modifier = {};
-      
+
       if (googleToken.accessToken) {
         modifier.access_token = googleToken.accessToken;
       }
@@ -89,6 +92,20 @@ class UserClass {
       isAdmin: userCount === 0,
     });
 
+    const template = await getEmailTemplate('welcome', { userName: displayName });
+
+    try {
+      logger.info('Trying to send new user email:');
+      await sendEmail({
+        from: `Earl Lee <${process.env.EMAIL_SUPPORT_FROM_ADDRESS}>`,
+        to: [email],
+        subject: template.subject,
+        body: template.message,
+      });
+    } catch (err) {
+      logger.error('Email sending error:', err);
+    }
+
     return _.pick(newUser, UserClass.publicFields());
   }
 }
@@ -98,4 +115,3 @@ mongoSchema.loadClass(UserClass);
 const User = mongoose.model('User', mongoSchema);
 
 export default User;
-

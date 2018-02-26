@@ -1,12 +1,13 @@
 {
   "name": "4-start",
   "version": "0.0.1",
-  "license" : "MIT",
+  "license": "MIT",
   "scripts": {
     "build": "next build",
     "start": "next start",
     "dev": "nodemon server/app.js --watch server --exec babel-node",
-    "lint": "eslint components pages lib server"
+    "lint": "eslint components pages lib server",
+    "test": "jest"
   },
   "dependencies": {
     "aws-sdk": "^2.182.0",
