@@ -13,9 +13,18 @@ class Index extends React.Component {
     }),
   };
 
+<<<<<<< HEAD
   static defaultProps = {
     user: null,
   };
+=======
+Index.propTypes = {
+  user: PropTypes.shape({
+    displayName: PropTypes.string,
+    email: PropTypes.string.isRequired,
+  }),
+};
+>>>>>>> d5d1f41bf069613e9b0648827ee1f8310944a8ab
 
   render() {
     const { user } = this.props;
