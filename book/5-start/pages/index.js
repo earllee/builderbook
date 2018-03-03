@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react';
 import PropTypes from 'prop-types';
 import Head from 'next/head';
@@ -11,11 +12,11 @@ class Index extends React.Component {
       displayName: PropTypes.string,
       email: PropTypes.string.isRequired,
     }),
-  }
+  };
 
   static defaultProps = {
     user: null,
-  }
+  };
 
   render() {
     const { user } = this.props;
@@ -23,10 +24,7 @@ class Index extends React.Component {
       <div style={{ padding: '10px 45px' }}>
         <Head>
           <title>Settings</title>
-          <meta
-            name="description"
-            content="List of purchased books."
-          />
+          <meta name="description" content="List of purchased books." />
         </Head>
         <p> List of purchased book</p>
         <p>Email: {user.email}</p>

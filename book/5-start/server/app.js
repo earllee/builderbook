@@ -5,8 +5,9 @@ import next from 'next';
 import mongoose from 'mongoose';
 
 import auth from './google';
-
 import logger from './logs';
+import api from './api';
+// import Chapter from './models/Chapter';
 
 require('dotenv').config();
 
@@ -20,6 +21,10 @@ const ROOT_URL = process.env.ROOT_URL || `http://localhost:${port}`;
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
+
+const URL_MAP = {
+  '/login': '/public/login',
+};
 
 app.prepare().then(() => {
   const server = express();
@@ -44,7 +49,21 @@ app.prepare().then(() => {
 
   auth({ server, ROOT_URL });
 
-  server.get('*', (req, res) => handle(req, res));
+  api(server);
+
+  server.get('/books/:bookSlug/:chapterSlug', (req, res) => {
+    const { bookSlug, chapterSlug } = req.params;
+    app.render(req, res, '/public/read-chapter', { bookSlug, chapterSlug });
+  });
+
+  server.get('*', (req, res) => {
+    const url = URL_MAP[req.path];
+    if (url) {
+      app.render(req, res, url);
+    } else {
+      handle(req, res);
+    }
+  });
 
   server.listen(port, (err) => {
     if (err) throw err;

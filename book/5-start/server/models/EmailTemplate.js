@@ -45,11 +45,9 @@ function insertTemplates() {
       return;
     }
 
-    EmailTemplate
-      .create(template)
-      .catch((error) => {
-        logger.error('EmailTemplate insertion error:', error);
-      });
+    EmailTemplate.create(template).catch((error) => {
+      logger.error('EmailTemplate insertion error:', error);
+    });
   });
 }
 
@@ -66,4 +64,3 @@ export default async function getEmailTemplate(name, params) {
     subject: Handlebars.compile(source.subject)(params),
   };
 }
-
