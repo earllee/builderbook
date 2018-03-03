@@ -3,11 +3,13 @@ import session from 'express-session';
 import mongoSessionStore from 'connect-mongo';
 import next from 'next';
 import mongoose from 'mongoose';
+import bodyParser from 'body-parser';
 
 import auth from './google';
 import api from './api';
-
+import routesWithSlug from './routesWithSlug';
 import logger from './logs';
+import { setupGithub as github } from './github';
 
 require('dotenv').config();
 
@@ -21,6 +23,7 @@ const ROOT_URL = process.env.ROOT_URL || `http://localhost:${port}`;
 
 const URL_MAP = {
   '/login': '/public/login',
+  '/my-books': '/customer/my-books',
 };
 
 const app = next({ dev });
@@ -28,6 +31,7 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const server = express();
+  server.use(bodyParser.json());
 
   const MongoStore = mongoSessionStore(session);
   const sess = {
@@ -48,12 +52,9 @@ app.prepare().then(() => {
   server.use(session(sess));
 
   auth({ server, ROOT_URL });
+  github({ server });
   api(server);
-
-  server.get('/books/:bookSlug/:chapterSlug', (req, res) => {
-    const { bookSlug, chapterSlug } = req.params;
-    app.render(req, res, '/public/read-chapter', { bookSlug, chapterSlug });
-  });
+  routesWithSlug({ server, app });
 
   server.get('*', (req, res) => {
     const url = URL_MAP[req.path];

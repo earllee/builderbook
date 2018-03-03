@@ -6,6 +6,7 @@ import Toolbar from 'material-ui/Toolbar';
 import Grid from 'material-ui/Grid';
 import Hidden from 'material-ui/Hidden';
 import Avatar from 'material-ui/Avatar';
+import Button from 'material-ui/Button';
 
 import MenuDrop from './MenuDrop';
 
@@ -17,10 +18,22 @@ Router.onRouteChangeStart = () => {
 Router.onRouteChangeComplete = () => NProgress.done();
 Router.onRouteChangeError = () => NProgress.done();
 
-const optionsMenu = [
+const optionsMenuCustomer = [
   {
-    text: 'Got question?',
-    href: 'https://github.com/builderbook/builderbook/issues',
+    text: 'My books',
+    href: '/customer/my-books',
+    as: '/my-books',
+  },
+  {
+    text: 'Log out',
+    href: '/logout',
+  },
+];
+
+const optionsMenuAdmin = [
+  {
+    text: 'Admin',
+    href: '/admin',
   },
   {
     text: 'Log out',
@@ -33,37 +46,49 @@ function Header({ user }) {
     <div>
       <Toolbar style={styleToolbar}>
         <Grid container direction="row" justify="space-around" alignItems="center">
-          <Grid item sm={10} xs={9} style={{ textAlign: 'left' }}>
-            {user ? (
-              <div>
-                <Hidden smDown>
-                  <Link prefetch href="/">
-                    <a style={{ marginRight: '20px' }}>Settings</a>
-                  </Link>
-                </Hidden>
-              </div>
-            ) : (
-              <Link prefetch href="/">
-                <Avatar
-                  src="https://storage.googleapis.com/builderbook/logo.svg"
-                  alt="Builder Book logo"
-                  style={{ margin: '0px auto 0px 20px', cursor: 'pointer' }}
-                />
-              </Link>
-            )}
+          <Grid item sm={9} xs={8} style={{ textAlign: 'left' }}>
+            <Link prefetch href="/">
+              <Avatar
+                src="https://storage.googleapis.com/builderbook/logo.svg"
+                alt="Builder Book logo"
+                style={{ margin: '0px auto 0px 20px', cursor: 'pointer' }}
+              />
+            </Link>
           </Grid>
-          <Grid item sm={1} xs={3} style={{ textAlign: 'right' }}>
+          <Grid item sm={2} xs={2} style={{ textAlign: 'right' }}>
+            {user && user.isAdmin && !user.isGithubConnected ? (
+              <Hidden smDown>
+                <a href="/auth/github">
+                  <Button raised color="primary">
+                    Connect Github
+                  </Button>
+                </a>
+              </Hidden>
+            ) : null}
+          </Grid>
+          <Grid item sm={1} xs={2} style={{ textAlign: 'right' }}>
             {user ? (
               <div style={{ whiteSpace: ' nowrap' }}>
-                {user.avatarUrl ? (
-                  <MenuDrop options={optionsMenu} src={user.avatarUrl} alt={user.displayName} />
+                {!user.isAdmin ? (
+                  <MenuDrop
+                    options={optionsMenuCustomer}
+                    src={user.avatarUrl}
+                    alt={user.displayName}
+                  />
+                ) : null}
+                {user.isAdmin ? (
+                  <MenuDrop
+                    options={optionsMenuAdmin}
+                    src={user.avatarUrl}
+                    alt={user.displayName}
+                  />
                 ) : null}
               </div>
             ) : (
               <Link prefetch href="/public/login" as="/login">
-                <a style={{ margin: '0px 20px 0px auto' }}>Log in</a>
-              </Link>
-            )}
+                  <a style={{ margin: '0px 20px 0px auto' }}>Log in</a>
+                </Link>
+              )}
           </Grid>
         </Grid>
       </Toolbar>

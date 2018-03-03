@@ -29,3 +29,12 @@ export const getBookDetail = ({ slug }) =>
     method: 'GET',
   });
 
+export const getGithubRepos = () =>
+  sendRequest(`${BASE_PATH}/github/repos`, {
+    method: 'GET',
+  });
+
+export const syncBookContent = ({ bookId }) =>
+  sendRequest(`${BASE_PATH}/books/sync-content`, {
+    body: JSON.stringify({ bookId }),
+  });
