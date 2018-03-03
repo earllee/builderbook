@@ -1,3 +1,4 @@
+/* eslint-disable */
 import PropTypes from 'prop-types';
 import Link from 'next/link';
 import Router from 'next/router';
@@ -43,14 +44,14 @@ function Header({ user }) {
                 </Hidden>
               </div>
             ) : (
-              <Link prefetch href="/">
-                <Avatar
-                  src="https://storage.googleapis.com/builderbook/logo.svg"
-                  alt="Builder Book logo"
-                  style={{ margin: '0px auto 0px 20px', cursor: 'pointer' }}
-                />
-              </Link>
-            )}
+                <Link prefetch href="/">
+                  <Avatar
+                    src="https://storage.googleapis.com/builderbook/logo.svg"
+                    alt="Builder Book logo"
+                    style={{ margin: '0px auto 0px 20px', cursor: 'pointer' }}
+                  />
+                </Link>
+              )}
           </Grid>
           <Grid item sm={1} xs={3} style={{ textAlign: 'right' }}>
             {user ? (
@@ -60,10 +61,10 @@ function Header({ user }) {
                 ) : null}
               </div>
             ) : (
-              <Link prefetch href="/login">
-                <a style={{ margin: '0px 20px 0px auto' }}>Log in</a>
-              </Link>
-            )}
+                <Link prefetch href="/public/login" as="/login">
+                  <a style={{ margin: '0px 20px 0px auto' }}>Log in</a>
+                </Link>
+              )}
           </Grid>
         </Grid>
       </Toolbar>
