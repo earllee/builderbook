@@ -61,26 +61,6 @@ class BookClass {
     return { books };
   }
 
-  static async getPurchasedBooks({ purchasedBookIds, freeBookIds }) {
-    const allBooks = await this.find().sort({ createdAt: -1 });
-
-    const purchasedBooks = [];
-    const freeBooks = [];
-    const otherBooks = [];
-
-    allBooks.forEach((b) => {
-      if (purchasedBookIds.includes(b.id)) {
-        purchasedBooks.push(b);
-      } else if (freeBookIds.includes(b.id)) {
-        freeBooks.push(b);
-      } else {
-        otherBooks.push(b);
-      }
-    });
-
-    return { purchasedBooks, freeBooks, otherBooks };
-  }
-
   static async getBySlug({ slug, userId }) {
     const bookDoc = await this.findOne({ slug });
     if (!bookDoc) {
@@ -248,21 +228,20 @@ class BookClass {
 
     User.findByIdAndUpdate(user.id, { $addToSet: { purchasedBookIds: book.id } }).exec();
 
-    getEmailTemplate(isPreorder ? 'preorder' : 'purchase', {
+    const template = await getEmailTemplate(isPreorder ? 'preorder' : 'purchase', {
       userName: user.displayName,
       bookTitle: book.name,
       bookUrl: `${ROOT_URL}/books/${book.slug}/introduction`,
-    })
-      .then(template =>
-        sendEmail({
-          from: `Builder Book <${process.env.EMAIL_SUPPORT_FROM_ADDRESS}>`,
-          to: [user.email],
-          subject: template.subject,
-          body: template.message,
-        }))
-      .catch((error) => {
-        logger.error('Email sending error:', error);
-      });
+    });
+
+    sendEmail({
+      from: `Kelly from builderbook.org <${process.env.EMAIL_SUPPORT_FROM_ADDRESS}>`,
+      to: [user.email],
+      subject: template.subject,
+      body: template.message,
+    }).catch((error) => {
+      logger.error('Email sending error:', error);
+    });
 
     subscribe({
       email: user.email,
@@ -281,6 +260,26 @@ class BookClass {
 
       isPreorder,
     });
+  }
+
+  static async getPurchasedBooks({ purchasedBookIds, freeBookIds }) {
+    const allBooks = await this.find().sort({ createdAt: -1 });
+
+    const purchasedBooks = [];
+    const freeBooks = [];
+    const otherBooks = [];
+
+    allBooks.forEach((b) => {
+      if (purchasedBookIds.includes(b.id)) {
+        purchasedBooks.push(b);
+      } else if (freeBookIds.includes(b.id)) {
+        freeBooks.push(b);
+      } else {
+        otherBooks.push(b);
+      }
+    });
+
+    return { purchasedBooks, freeBooks, otherBooks };
   }
 
   static async giveFree({ id, userId }) {
@@ -307,13 +306,6 @@ class BookClass {
       createdAt: new Date(),
       isFree: true,
     });
-  }
-
-  static async getPreorderedUsersEmail(bookId) {
-    const preorders = await Purchase.find({ bookId, isPreorder: true }, 'userId');
-    const users = await User.find({ _id: { $in: preorders.map(p => p.userId) } }, 'email');
-
-    return users.map(u => u.email);
   }
 }
 

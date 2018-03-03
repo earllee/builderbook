@@ -41,7 +41,10 @@ class ReadChapter extends React.Component {
 
     const { chapter } = props;
 
-    const htmlContent = '' || chapter.htmlContent;
+    let htmlContent = '';
+    if (chapter) {
+      htmlContent = chapter.htmlContent;
+    }
 
     this.state = {
       chapter,
@@ -51,13 +54,11 @@ class ReadChapter extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     const { chapter } = nextProps;
-    if (!chapter) {
-      return;
+
+    if (chapter && chapter._id !== this.props.chapter._id) {
+      const { htmlContent } = chapter;
+      this.setState({ chapter, htmlContent });
     }
-
-    const htmlContent = chapter.content;
-
-    this.setState({ chapter: nextProps.chapter, htmlContent });
   }
 
   renderMainContent() {
