@@ -43,9 +43,7 @@ class ReadChapter extends React.Component {
 
     const chapter = await getChapterDetail({ bookSlug, chapterSlug }, { headers });
 
-    const showStripeModal = req ? !!req.query.buy : window.location.search.includes('buy=1');
-
-    return { chapter, showStripeModal };
+    return { chapter };
   }
 
   constructor(props, ...args) {
@@ -53,7 +51,10 @@ class ReadChapter extends React.Component {
 
     const { chapter } = props;
 
-    const htmlContent = '' || chapter.htmlContent;
+    let htmlContent = '';
+    if (chapter) {
+      htmlContent = chapter.htmlContent;
+    }
 
     this.state = {
       showTOC: false,
@@ -65,10 +66,7 @@ class ReadChapter extends React.Component {
   }
 
   componentDidMount() {
-    document.getElementById('main-content').addEventListener('scroll', throttle(() => {
-      this.onScrollActiveSection();
-      this.onScrollHideHeader();
-    }, 500));
+    document.getElementById('main-content').addEventListener('scroll', this.onScroll);
 
     const isMobile = window.innerWidth < 768;
 
@@ -80,27 +78,27 @@ class ReadChapter extends React.Component {
   componentWillReceiveProps(nextProps) {
     const { chapter } = nextProps;
 
-    if (!chapter) {
-      return;
+    if (chapter && chapter._id !== this.props.chapter._id) {
+      document.getElementById('chapter-content').scrollIntoView();
+      const { htmlContent } = chapter;
+      this.setState({ chapter, htmlContent });
     }
-    document.getElementById('chapter-content').scrollIntoView();
-
-    const htmlContent = '' || chapter.htmlContent;
-    this.setState({ chapter: nextProps.chapter, htmlContent });
   }
 
   componentWillUnmount() {
-    document.getElementById('main-content').removeEventListener('scroll', () => {
-      this.onScrollActiveSection();
-      this.onScrollHideHeader();
-    });
+    document.getElementById('main-content').removeEventListener('scroll', this.onScroll);
   }
+
+  onScroll = throttle(() => {
+    this.onScrollActiveSection();
+    this.onScrollHideHeader();
+  }, 500);
 
   onScrollActiveSection = () => {
     const sectionElms = document.querySelectorAll('span.section-anchor');
     let activeSection;
 
-    let preBound;
+    let aboveSection;
     for (let i = 0; i < sectionElms.length; i += 1) {
       const s = sectionElms[i];
       const b = s.getBoundingClientRect();
@@ -115,7 +113,7 @@ class ReadChapter extends React.Component {
       }
 
       if (anchorBottom > window.innerHeight && i > 0) {
-        if (preBound.bottom <= 0) {
+        if (aboveSection.bottom <= 0) {
           activeSection = {
             hash: sectionElms[i - 1].attributes.getNamedItem('name').value,
           };
@@ -127,7 +125,7 @@ class ReadChapter extends React.Component {
         };
       }
 
-      preBound = b;
+      aboveSection = b;
     }
 
     if (this.state.activeSection !== activeSection) {
@@ -146,14 +144,6 @@ class ReadChapter extends React.Component {
 
   toggleChapterList = () => {
     this.setState({ showTOC: !this.state.showTOC });
-  };
-
-  changeBookmark = (bookmark) => {
-    const { chapter } = this.state;
-
-    this.setState({
-      chapter: Object.assign({}, chapter, { bookmark }),
-    });
   };
 
   closeTocWhenMobile = () => {
