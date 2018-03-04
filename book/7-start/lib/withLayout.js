@@ -7,7 +7,7 @@ import getContext from '../lib/context';
 import Header from '../components/Header';
 import Notifier from '../components/Notifier';
 
-function withLayout(BaseComponent) {
+function withLayout(BaseComponent, { noHeader = false } = {}) {
   class App extends React.Component {
     componentWillMount() {
       this.pageContext = this.props.pageContext || getContext();
@@ -28,7 +28,7 @@ function withLayout(BaseComponent) {
         >
           <Reboot />
           <div>
-            <Header {...this.props} />
+            {noHeader ? null : <Header {...this.props} />}
             <BaseComponent {...this.props} />
             <Notifier />
           </div>

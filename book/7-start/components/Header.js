@@ -41,9 +41,17 @@ const optionsMenuAdmin = [
   },
 ];
 
-function Header({ user }) {
+function Header({ user, hideHeader }) {
   return (
-    <div>
+    <div
+      style={{
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'block',
+        top: hideHeader ? '-64px' : '0px',
+        transition: 'top 0.5s ease-in',
+      }}
+    >
       <Toolbar style={styleToolbar}>
         <Grid container direction="row" justify="space-around" alignItems="center">
           <Grid item sm={9} xs={8} style={{ textAlign: 'left' }}>
@@ -88,9 +96,9 @@ function Header({ user }) {
               </div>
             ) : (
               <Link prefetch href="/public/login" as="/login">
-                <a style={{ margin: '0px 20px 0px auto' }}>Log in</a>
-              </Link>
-            )}
+                  <a style={{ margin: '0px 20px 0px auto' }}>Log in</a>
+                </Link>
+              )}
           </Grid>
         </Grid>
       </Toolbar>
@@ -103,10 +111,12 @@ Header.propTypes = {
     avatarUrl: PropTypes.string,
     displayName: PropTypes.string,
   }),
+  hideHeader: PropTypes.bool,
 };
 
 Header.defaultProps = {
   user: null,
+  hideHeader: false,
 };
 
 export default Header;

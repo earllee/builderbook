@@ -7,7 +7,7 @@ module.exports = {
   },
   plugins: ['react', 'jsx-a11y', 'import'],
   rules: {
-    'max-len': ['error', 100],
+    // 'max-len': ['error', 100],
     'no-underscore-dangle': ['error', { allow: ['_id'] }],
     'prefer-destructuring': [
       'error',
