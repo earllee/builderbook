@@ -2,11 +2,10 @@ import mongoose, { Schema } from 'mongoose';
 import frontmatter from 'front-matter';
 
 import Chapter from './Chapter';
-import User from './User';
 import Purchase from './Purchase';
 import getEmailTemplate from './EmailTemplate';
 
-import { charge as stripeCharge } from '../stripe';
+import stripeCharge from '../stripe';
 import { getCommits, getContent } from '../github';
 import sendEmail from '../aws';
 import { subscribe } from '../mailchimp';
@@ -157,16 +156,14 @@ class BookClass {
   }
 
   static async buy({ id, user, stripeToken }) {
-    const book = await this.findById(id, 'name slug price isInPreorder preorderPrice');
-    if (!book) {
-      throw new Error('Book not found');
-    }
-
-    const isPreorder = !!book.isInPreorder && !!book.preorderPrice;
-    const price = (isPreorder && book.preorderPrice) || book.price;
-
     if (!user) {
       throw new Error('User required');
+    }
+
+    const book = await this.findById(id, 'name slug price');
+
+    if (!book) {
+      throw new Error('Book not found');
     }
 
     const isPurchased = (await Purchase.find({ userId: user._id, bookId: id }).count()) > 0;
@@ -175,15 +172,12 @@ class BookClass {
     }
 
     const chargeObj = await stripeCharge({
-      amount: price * 100,
+      amount: book.price * 100,
       token: stripeToken.id,
-      bookName: book.name,
       buyerEmail: user.email,
     });
 
-    User.findByIdAndUpdate(user.id, { $addToSet: { purchasedBookIds: book.id } }).exec();
-
-    const template = await getEmailTemplate(isPreorder ? 'preorder' : 'purchase', {
+    const template = await getEmailTemplate('ordered', {
       userName: user.displayName,
       bookTitle: book.name,
       bookUrl: `${ROOT_URL}/books/${book.slug}/introduction`,
@@ -200,7 +194,7 @@ class BookClass {
 
     subscribe({
       email: user.email,
-      listName: isPreorder ? 'preordered' : 'ordered',
+      listName: 'ordered',
       book: book.slug,
     }).catch((error) => {
       logger.error('Mailchimp subscribing error:', error);
@@ -209,11 +203,9 @@ class BookClass {
     return Purchase.create({
       userId: user._id,
       bookId: book._id,
-      amount: price * 100,
+      amount: book.price * 100,
       createdAt: new Date(),
       stripeCharge: chargeObj,
-
-      isPreorder,
     });
   }
 
