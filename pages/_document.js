@@ -22,10 +22,7 @@ class MyDocument extends Document {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css?family=Muli:300,400:latin"
           />
-          <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/icon?family=Material+Icons"
-          />
+          <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
           <link
             rel="stylesheet"
             href="https://storage.googleapis.com/builderbook/nprogress.min.css"
@@ -56,11 +53,11 @@ class MyDocument extends Document {
                 background:#FFF;
                 color: #000;
                 border: 1px solid #ddd;
+                font-size: 14px;
               }
               code {
                 font-size: 14px;
                 background: #FFF;
-                padding: 3px 5px;
               }
             `}
           </style>

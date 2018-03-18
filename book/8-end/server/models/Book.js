@@ -1,11 +1,13 @@
 import mongoose, { Schema } from 'mongoose';
 import frontmatter from 'front-matter';
 
+import getRootUrl from '../../lib/api/getRootUrl';
 import Chapter from './Chapter';
 import Purchase from './Purchase';
 import getEmailTemplate from './EmailTemplate';
+import User from './User';
 
-import stripeCharge from '../stripe';
+import { stripeCharge } from '../stripe';
 import { getCommits, getContent } from '../github';
 import sendEmail from '../aws';
 import { subscribe } from '../mailchimp';
@@ -13,7 +15,7 @@ import { subscribe } from '../mailchimp';
 import generateSlug from '../utils/slugify';
 import logger from '../logs';
 
-const ROOT_URL = process.env.ROOT_URL || `http://localhost:${process.env.PORT || 8000}`;
+const ROOT_URL = getRootUrl();
 
 const mongoSchema = new Schema({
   name: {
@@ -59,7 +61,8 @@ class BookClass {
     const book = bookDoc.toObject();
 
     book.chapters = (await Chapter.find({ bookId: book._id }, 'title slug')
-      .sort({ order: 1 })).map(chapter => chapter.toObject());
+      .sort({ order: 1 }))
+      .map(chapter => chapter.toObject());
 
     return book;
   }
@@ -177,28 +180,30 @@ class BookClass {
       buyerEmail: user.email,
     });
 
-    const template = await getEmailTemplate('ordered', {
+    User.findByIdAndUpdate(user.id, { $addToSet: { purchasedBookIds: book.id } }).exec();
+
+    const template = await getEmailTemplate('purchase', {
       userName: user.displayName,
       bookTitle: book.name,
       bookUrl: `${ROOT_URL}/books/${book.slug}/introduction`,
     });
 
-    sendEmail({
-      from: `Kelly from builderbook.org <${process.env.EMAIL_SUPPORT_FROM_ADDRESS}>`,
-      to: [user.email],
-      subject: template.subject,
-      body: template.message,
-    }).catch((error) => {
+    try {
+      await sendEmail({
+        from: `Kelly from builderbook.org <${process.env.EMAIL_SUPPORT_FROM_ADDRESS}>`,
+        to: [user.email],
+        subject: template.subject,
+        body: template.message,
+      });
+    } catch (error) {
       logger.error('Email sending error:', error);
-    });
+    }
 
-    subscribe({
-      email: user.email,
-      listName: 'ordered',
-      book: book.slug,
-    }).catch((error) => {
-      logger.error('Mailchimp subscribing error:', error);
-    });
+    try {
+      await subscribe({ email: user.email });
+    } catch (error) {
+      logger.error('Mailchimp error:', error);
+    }
 
     return Purchase.create({
       userId: user._id,
@@ -209,24 +214,11 @@ class BookClass {
     });
   }
 
-  static async getPurchasedBooks({ purchasedBookIds, freeBookIds }) {
-    const allBooks = await this.find().sort({ createdAt: -1 });
-
-    const purchasedBooks = [];
-    const freeBooks = [];
-    const otherBooks = [];
-
-    allBooks.forEach((b) => {
-      if (purchasedBookIds.includes(b.id)) {
-        purchasedBooks.push(b);
-      } else if (freeBookIds.includes(b.id)) {
-        freeBooks.push(b);
-      } else {
-        otherBooks.push(b);
-      }
+  static async getPurchasedBooks({ purchasedBookIds }) {
+    const purchasedBooks = await this.find({ _id: { $in: purchasedBookIds } }).sort({
+      createdAt: -1,
     });
-
-    return { purchasedBooks, freeBooks, otherBooks };
+    return { purchasedBooks };
   }
 }
 
