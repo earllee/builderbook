@@ -4,8 +4,17 @@ import frontmatter from 'front-matter';
 import generateSlug from '../utils/slugify';
 import Chapter from './Chapter';
 
+import getRootUrl from '../../lib/api/getRootUrl';
 import { getCommits, getContent } from '../github';
 import logger from '../logs';
+import Purchase from './Purchase';
+import { stripeCharge } from '../stripe';
+import getEmailTemplate from './EmailTemplate';
+import sendEmail from '../aws';
+import User from './User';
+import { subscribe } from '../mailchimp';
+
+const ROOT_URL = getRootUrl();
 
 const mongoSchema = new Schema({
   name: {
@@ -33,7 +42,6 @@ const mongoSchema = new Schema({
   },
 });
 
-
 class BookClass {
   static async list({ offset = 0, limit = 10 } = {}) {
     const books = await this.find({})
@@ -51,9 +59,9 @@ class BookClass {
 
     const book = bookDoc.toObject();
 
-    book.chapters = (await Chapter.find({ bookId: book._id }, 'title slug')
-      .sort({ order: 1 }))
-      .map(chapter => chapter.toObject());
+    // eslint-disable-next-line
+    book.chapters = (await Chapter.find({ bookId: book._id }, 'title slug').sort({ order: 1 })).map(
+      chapter => chapter.toObject());
     return book;
   }
 
@@ -67,6 +75,67 @@ class BookClass {
       slug,
       price,
       githubRepo,
+      createdAt: new Date(),
+    });
+  }
+
+  static async buy({ id, user, stripeToken }) {
+    if (!user) {
+      throw new Error('User required');
+    }
+
+    // 1. find book by id
+    const book = await this.findById(id, 'name slug price');
+
+    if (!book) {
+      throw new Error('Book not found');
+    }
+
+    // 2. check if user bought book already
+    const isPurchased = (await Purchase.find({ userId: user._id, bookId: id }).count()) > 0;
+    if (isPurchased) {
+      throw new Error('Already bought this book');
+    }
+
+    // 3. call stripeCharge() method
+    const chargeObj = await stripeCharge({
+      amount: book.price * 100,
+      token: stripeToken.id,
+      buyerEmail: user.email,
+    });
+
+    User.findByIdAndUpdate(user.id, { $addToSet: { purchasedBookIds: book.id } }).exec();
+
+    // 4. send transactional email confirming purchase
+    const template = await getEmailTemplate('purchase', {
+      userName: user.displayName,
+      bookTitle: book.name,
+      bookUrl: `${ROOT_URL}/books/${book.slug}/introduction`,
+    });
+
+    try {
+      await sendEmail({
+        from: `Kelly from builderbook.org <${process.env.EMAIL_SUPPORT_FROM_ADDRESS}>`,
+        to: [user.email],
+        subject: template.subject,
+        body: template.message,
+      });
+    } catch (error) {
+      logger.error('Email sending error:', error);
+    }
+
+    try {
+      await subscribe({ email: user.email });
+    } catch (error) {
+      logger.error('Mailchimp error:', error);
+    }
+
+    // 5. create new Purchase document
+    return Purchase.create({
+      userId: user._id,
+      bookId: book._id,
+      amount: book.price * 100,
+      stripeCharge: chargeObj,
       createdAt: new Date(),
     });
   }
@@ -89,7 +158,6 @@ class BookClass {
 
     return this.updateOne({ _id: id }, { $set: modifier });
   }
-
 
   static async syncContent({ id, githubAccessToken }) {
     const book = await this.findById(id, 'githubRepo githubLastCommitSha');
@@ -147,6 +215,13 @@ class BookClass {
     }));
 
     return book.update({ githubLastCommitSha: lastCommitSha });
+  }
+
+  static async getPurchasedBooks({ purchasedBookIds }) {
+    const purchasedBooks = await this.find({ _id: { $in: purchasedBookIds } }).sort({
+      createdAt: -1,
+    });
+    return { purchasedBooks };
   }
 }
 

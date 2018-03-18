@@ -4,13 +4,15 @@ import mongoSessionStore from 'connect-mongo';
 import bodyParser from 'body-parser';
 import next from 'next';
 import mongoose from 'mongoose';
+import helmet from 'helmet';
 
 import auth from './google';
 import { setupGithub as github } from './github';
 import api from './api';
-
 import logger from './logs';
 import routesWithSlug from './routesWithSlug';
+import getRootUrl from '../lib/api/getRootUrl';
+import sitemapAndRobots from './sitemapAndRobots';
 
 require('dotenv').config();
 
@@ -20,7 +22,7 @@ const MONGO_URL = process.env.MONGO_URL_TEST;
 mongoose.connect(MONGO_URL);
 
 const port = process.env.PORT || 8000;
-const ROOT_URL = process.env.ROOT_URL || `http://localhost:${port}`;
+const ROOT_URL = getRootUrl();
 
 const URL_MAP = {
   '/login': '/public/login',
@@ -32,6 +34,7 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const server = express();
+  server.use(helmet());
 
   server.use(bodyParser.json());
 
@@ -51,12 +54,18 @@ app.prepare().then(() => {
     },
   };
 
+  if (!dev) {
+    server.set('trust proxy', 1);
+    sess.cookie.secure = true;
+  }
+
   server.use(session(sess));
 
   auth({ server, ROOT_URL });
   github({ server });
   api(server);
   routesWithSlug({ server, app });
+  sitemapAndRobots({ server });
 
   server.get('*', (req, res) => {
     const url = URL_MAP[req.path];
@@ -72,4 +81,3 @@ app.prepare().then(() => {
     logger.info(`> Ready on ${ROOT_URL}`);
   });
 });
-

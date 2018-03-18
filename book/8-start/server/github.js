@@ -7,7 +7,6 @@ import User from './models/User';
 const AUTHORIZE_URI = 'https://github.com/login/oauth/authorize';
 const TOKEN_URI = 'https://github.com/login/oauth/access_token';
 
-
 export function setupGithub({ server }) {
   const dev = process.env.NODE_ENV !== 'production';
 

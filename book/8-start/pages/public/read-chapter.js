@@ -11,6 +11,7 @@ import Header from '../../components/Header';
 import { getChapterDetail } from '../../lib/api/public';
 import withLayout from '../../lib/withLayout';
 import withAuth from '../../lib/withAuth';
+import BuyButton from '../../components/customer/BuyButton';
 
 const styleIcon = {
   opacity: '0.5',
@@ -26,6 +27,10 @@ class ReadChapter extends React.Component {
     user: PropTypes.shape({
       _id: PropTypes.string.isRequired,
     }),
+    url: PropTypes.shape({
+      asPath: PropTypes.string.isRequired,
+    }).isRequired,
+    showStripeModal: PropTypes.bool.isRequired,
   };
 
   static defaultProps = {
@@ -43,7 +48,9 @@ class ReadChapter extends React.Component {
 
     const chapter = await getChapterDetail({ bookSlug, chapterSlug }, { headers });
 
-    return { chapter };
+    const showStripeModal = req ? !!req.query.buy : window.location.search.includes('buy=1');
+
+    return { chapter, showStripeModal };
   }
 
   constructor(props, ...args) {
@@ -52,8 +59,10 @@ class ReadChapter extends React.Component {
     const { chapter } = props;
 
     let htmlContent = '';
-    if (chapter) {
+    if (chapter && (chapter.isPurchased || chapter.isFree)) {
       htmlContent = chapter.htmlContent;
+    } else {
+      htmlContent = chapter.htmlExcerpt;
     }
 
     this.state = {
@@ -80,7 +89,13 @@ class ReadChapter extends React.Component {
 
     if (chapter && chapter._id !== this.props.chapter._id) {
       document.getElementById('chapter-content').scrollIntoView();
-      const { htmlContent } = chapter;
+      let htmlContent = '';
+      if (chapter && (chapter.isPurchased || chapter.isFree)) {
+        htmlContent = chapter.htmlContent;
+      } else {
+        htmlContent = chapter.htmlExcerpt;
+      }
+
       this.setState({ chapter, htmlContent });
     }
   }
@@ -151,9 +166,13 @@ class ReadChapter extends React.Component {
   };
 
   renderMainContent() {
+    const { user, showStripeModal } = this.props;
+
     const {
       chapter, htmlContent, showTOC, isMobile,
     } = this.state;
+
+    const { book } = chapter;
 
     let padding = '20px 20%';
     if (!isMobile && showTOC) {
@@ -172,6 +191,9 @@ class ReadChapter extends React.Component {
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: htmlContent }}
         />
+        {!chapter.isPurchased && !chapter.isFree ? (
+          <BuyButton user={user} book={book} showModal={showStripeModal} />
+        ) : null}
       </div>
     );
   }
@@ -259,12 +281,11 @@ class ReadChapter extends React.Component {
   }
 
   render() {
-    const { user } = this.props;
+    const { user, url } = this.props;
 
     const {
       chapter, showTOC, hideHeader, isMobile,
     } = this.state;
-
 
     if (!chapter) {
       return <Error statusCode={404} />;
@@ -288,7 +309,7 @@ class ReadChapter extends React.Component {
           ) : null}
         </Head>
 
-        <Header user={user} hideHeader={hideHeader} />
+        <Header user={user} hideHeader={hideHeader} redirectUrl={url.asPath} />
 
         {this.renderSidebar()}
 
